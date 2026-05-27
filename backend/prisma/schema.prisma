@@ -53,6 +53,8 @@ model Doctor {
   availableTo     String   @default("17:00")
   createdAt       DateTime @default(now())
 
+  @@index([specialization])
+  @@index([department])
   // MISSING INDEX: No index on department or specialization.
   // Filtering/searching by these columns does full table scans at scale.
   appointments Appointment[]
@@ -84,6 +86,9 @@ model Appointment {
   status          AppointmentStatus @default(PENDING)
   createdAt       DateTime          @default(now())
 
+  @@index([doctorId, status])
+  @@index([patientId])
+  @@index([appointmentDate])
   // MISSING INDEX: No index on (doctorId, status) — important for worklist queries.
   // MISSING INDEX: No index on patientId foreign key.
   queueTokens QueueToken[]
@@ -101,6 +106,9 @@ model QueueToken {
   status        QueueStatus @default(WAITING)
   createdAt     DateTime    @default(now())
 
+  @@index([doctorId, createdAt])
+  @@index([status])
+  @@index([doctorId, tokenNumber])
   // MISSING INDEX: No index on (doctorId, createdAt) — used in daily token aggregation.
   // MISSING INDEX: No index on status — used in frequent status filter queries.
   // SCHEMA BUG: No unique constraint on (doctorId, tokenNumber, date) —
