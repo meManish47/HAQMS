@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment files
+.env
+.env.local
+
+# Next.js build
+.next/
+
+# Prisma migrations (optional, some keep these)
+# backend/prisma/migrations/

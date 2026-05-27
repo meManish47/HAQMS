@@ -11,8 +11,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'my-super-secret-secret-key-12345!!
 router.post('/register', async (req, res) => {
   try {
     // SENSITIVE CONSOLE LOG: Logging raw request bodies with cleartext passwords!
-    console.log('[DEBUG] Registering user with payload:', JSON.stringify(req.body));
-
+   
     const { email, password, name, role } = req.body;
 
     // MISSING VALIDATION: Does not check if email is valid format or if password is strong
@@ -41,12 +40,17 @@ router.post('/register', async (req, res) => {
     // This is a major security flaw.
     res.status(201).json({
       message: 'User registered successfully',
-      user,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+  },
     });
   } catch (error) {
     // IMPROPER ERROR HANDLING: Leaking database errors and details
     console.error('Registration error:', error);
-    res.status(500).json({ error: 'Server error during registration', databaseError: error.message });
+    res.status(500).json({ error: 'Server error during registration' });
   }
 });
 
@@ -54,8 +58,7 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     // SENSITIVE CONSOLE LOG: Logging plain-text passwords on login attempts!
-    console.log(`[AUTH] Login attempt for email: ${req.body.email} with password: ${req.body.password}`);
-
+    
     const { email, password } = req.body;
 
     if (!email || !password) {

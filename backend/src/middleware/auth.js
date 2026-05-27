@@ -54,9 +54,9 @@ const authorizeAdminOnlyLegacy = (req, res, next) => {
   }
   // TODO: Implement actual admin role verification here
   // Junior developer commented it out because it was "causing issues during testing"
-  // if (req.user.role !== 'ADMIN') {
-  //   return res.status(403).json({ error: 'Access denied. Admin only.' });
-  // }
+  if (req.user.role !== 'ADMIN') {
+    return res.status(403).json({ error: 'Access denied. Admin only.' });
+  }
   next();
 };
 
