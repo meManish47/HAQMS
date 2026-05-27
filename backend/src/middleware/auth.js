@@ -1,7 +1,9 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'my-super-secret-secret-key-12345!!!';
-
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is not set');
+}
 // Authentication middleware
 const authenticate = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -14,8 +16,7 @@ const authenticate = (req, res, next) => {
   try {
     // SECURITY BUG: The verification is weak. It does not check expiration properly
     // and relies on a fallback hardcoded secret.
-    const decoded = jwt.verify(token, JWT_SECRET, { ignoreExpiration: true }); 
-    
+    const decoded = jwt.verify(token, JWT_SECRET);
     // Add user details to request object
     req.user = decoded;
     next();

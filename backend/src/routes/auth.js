@@ -76,11 +76,14 @@ router.post('/login', async (req, res) => {
     }
 
     // Weak JWT token generation: signs token with no expiration limit or massive expiry (365 days)
+    
+    //10 h expiry added as doctors have about 8-10 h shifts in hospitals
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role, name: user.name },
       JWT_SECRET,
-      { expiresIn: '365d' }
+      { expiresIn: '10h' }
     );
+    
 
     // INCONSISTENT API RESPONSE format: Returns a nested success payload
     // Different from registration response style
