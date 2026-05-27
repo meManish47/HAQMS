@@ -9,58 +9,51 @@ const prisma = new PrismaClient();
 // Get all patients with search, filtering, and INEFICIENT IN-MEMORY PAGINATION
 router.get('/', authenticate, async (req, res) => {
   try {
-    const { search, gender } = req.query;
-    
-    // Inefficient: Retrieve all matching rows without take/skip limits from the database.
-    // Scales poorly as patient directory grows.
-    const allPatients = await prisma.patient.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+    const { search, gender, page = 1, limit = 5 } = req.query;
 
-    let filteredPatients = allPatients;
+    const where = {};
 
-    // In-memory filter for search (checks name/phone/email)
     if (search) {
-      const query = search.toLowerCase();
-      filteredPatients = filteredPatients.filter(
-        (p) =>
-          p.name.toLowerCase().includes(query) ||
-          p.phoneNumber.includes(query) ||
-          (p.email && p.email.toLowerCase().includes(query))
-      );
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { phoneNumber: { contains: search } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
     }
 
-    // In-memory filter for gender
     if (gender && gender !== 'All') {
-      filteredPatients = filteredPatients.filter(
-        (p) => p.gender.toLowerCase() === gender.toLowerCase()
-      );
+      where.gender = { equals: gender, mode: 'insensitive' };
     }
 
-    // In-memory pagination setup
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 5;
-    const offset = (page - 1) * limit;
-    
-    const paginatedResult = filteredPatients.slice(offset, offset + limit);
-    const totalPages = Math.ceil(filteredPatients.length / limit);
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
 
-    // Inconsistent Response style
+    // Single DB call with count
+    const [patients, totalPatients] = await Promise.all([
+      prisma.patient.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limitNum,
+      }),
+      prisma.patient.count({ where }),
+    ]);
+
     res.json({
       success: true,
-      patients: paginatedResult,
+      patients,
       pagination: {
-        page,
-        limit,
-        totalPatients: filteredPatients.length,
-        totalPages,
+        page: pageNum,
+        limit: limitNum,
+        totalPatients,
+        totalPages: Math.ceil(totalPatients / limitNum),
       },
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch patients', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch patients' });
   }
 });
-
 // GET /api/patients/:id
 // Get patient details by ID. Notice N+1 issue could be placed here or in appointments,
 // but let's make it fetch the patient with their appointments and tokens.
